@@ -5,10 +5,14 @@ inline F sigmoid(F x){
   return 1/(1+exp(-x));
 }
 inline F sigmoid_dash(F x){
-  return x*(1-x);
+  F s = sigmoid(x);
+  return s*(1-s);
 }
 inline F id(F x){return x;}
 inline F id_dash(F x){return 1;}
+inline F tanh_dash(F x){
+  return 1/pow(cosh(x),2);
+}
 using Matrix = vector<vector<F>>;
 template <F(*Hidden_Act)(F),F(*Hidden_Act_dash)(F),F(*Output_Act)(F),F(*Output_Act_dash)(F),int... node_count> class NN{
   static const int Layer_count = sizeof...(node_count);
@@ -50,33 +54,28 @@ public:
     for(int i=0;i<Layer_count-1;i++){
       fill(A[i+1].begin(),A[i+1].begin()+Node_count[i+1],0);
       for(int k=0;k<Node_count[i]+1;k++){
-        for(int j=0;j<Node_count[i+1];j++) A[i+1][j] += A[i][k]*W[i][k][j];
+        F bef_A = (i==0 || k==Node_count[i] ? A[i][k]:Hidden_Act(A[i][k]));
+        for(int j=0;j<Node_count[i+1];j++) A[i+1][j] += bef_A*W[i][k][j];
       }
-      for(int j=0;j<Node_count[i+1];j++) A[i+1][j] = (i==Layer_count-2 ? Output_Act:Hidden_Act)(A[i+1][j]);
     }
-    // for(int i=0;i<Layer_count;i++){
-    //   for(int j=0;j<Node_count[i];j++) cout << A[i][j] << " ";
-    //   cout << endl;
-    // }
     //逆伝播
     vector<F> delta(Node_count[Layer_count-1]);//転置されている
     for(int i=Layer_count-1;i>=1;i--){
       vector<F> delta_new(Node_count[i]);
       if(i == Layer_count-1){
         for(int j=0;j<Node_count[i];j++){
-          delta_new[j] = Output_Act_dash(A[i][j])*(A[i][j]-t[j]);
+          delta_new[j] = Output_Act_dash(A[i][j])*(Output_Act(A[i][j])-t[j]);
         }
       }
       else{
         for(int j=0;j<Node_count[i];j++){
           for(int k=0;k<Node_count[i+1];k++) delta_new[j] += W[i][j][k]*delta[k];
           delta_new[j] *= Hidden_Act_dash(A[i][j]);
-          //delta_new[j] *= Hidden_Act_dash(A[i][j]);
         }
       }
       delta = delta_new;
       for(int j=0;j<Node_count[i-1]+1;j++){
-        for(int k=0;k<Node_count[i];k++) dW[i-1][j][k] = A[i-1][j]*delta[k];
+        for(int k=0;k<Node_count[i];k++) dW[i-1][j][k] = (i>1 || j<Node_count[i-1] ? Hidden_Act(A[i-1][j]):A[i-1][j])*delta[k];
       }
     }
     for(int i=0;i<Layer_count-1;i++){

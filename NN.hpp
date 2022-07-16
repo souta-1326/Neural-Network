@@ -93,14 +93,14 @@ public:
     }
   }
   void output(F x[node_count[0]],F ret[node_count[layer_count-1]]){
-    memcpy(A[0],x,node_count[0]*sizeof(F));
+    memcpy(Act_A[0],x,node_count[0]*sizeof(F));
     for(int i=0;i<layer_count-1;i++){
       fill(A[i+1],A[i+1]+node_count[i+1],0);
       for(int k=0;k<node_count[i]+1;k++){
-        for(int j=0;j<node_count[i+1];j++) A[i+1][j] += A[i][k]*W[i][k][j];
+        for(int j=0;j<node_count[i+1];j++) A[i+1][j] += Act_A[i][k]*W[i][k][j];
       }
-      for(int j=0;j<node_count[i+1];j++) A[i+1][j] = (i==layer_count-2 ? Output_Act:Hidden_Act)(A[i+1][j]);
+      for(int j=0;j<node_count[i+1];j++) Act_A[i+1][j] = (i==layer_count-2 ? Output_Act:Hidden_Act)(A[i+1][j]);
     }
-    memcpy(ret,A[layer_count-1],node_count[layer_count-1]*sizeof(F));
+    memcpy(ret,Act_A[layer_count-1],node_count[layer_count-1]*sizeof(F));
   }
 };

@@ -57,7 +57,7 @@ public:
     for(int i=layer_count-1;i>=1;i--){
       if(i == layer_count-1){
         for(int j=0;j<node_count[i];j++){
-          delta_new[j] = Output_Act_dash(A[i][j])*(Output_Act(A[i][j])-t[j]);
+          delta[j] = Output_Act_dash(A[i][j])*(Output_Act(A[i][j])-t[j]);
         }
       }
       else{
@@ -66,10 +66,11 @@ public:
           for(int k=0;k<node_count[i+1];k++) delta_new[j] += W[i][j][k]*delta[k];
           delta_new[j] *= Hidden_Act_dash(A[i][j]);
         }
+        memcpy(delta,delta_new,node_count[i]*sizeof(F));
       }
-      memcpy(delta,delta_new,node_count[i]*sizeof(F));
       for(int j=0;j<node_count[i-1]+1;j++){
-        for(int k=0;k<node_count[i];k++) dW[i-1][j][k] = (i==1 || j==node_count[i-1] ? A[i-1][j]:Hidden_Act(A[i-1][j]))*delta[k];
+        F nex_A = (i==1 || j==node_count[i-1] ? A[i-1][j]:Hidden_Act(A[i-1][j]));
+        for(int k=0;k<node_count[i];k++) dW[i-1][j][k] = nex_A*delta[k];
       }
     }
     //反映

@@ -22,7 +22,7 @@ template <F(*Hidden_Act)(F),F(*Hidden_Act_dash)(F),F(*Output_Act)(F),F(*Output_A
   F W[layer_count-1][max_node_count+1][max_node_count],dW[layer_count-1][max_node_count+1][max_node_count];
   F lr;
 public:
-  NN(F I_lr):lr(I_lr){
+  NN(F _lr = 0.01):lr(_lr){
     for(int i=0;i<layer_count-1;i++) A[i][node_count[i]] = 1;
     random_device seed_gen;
     default_random_engine engine(seed_gen());
@@ -81,11 +81,11 @@ public:
       }
     }
   }
-  void out_W(){
+  void W_out(){
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
-          cout << i << j << k << ":" << W[i][j][k] << endl;
+          fprintf(stderr,"%d %d %d: %lf\n",i,j,k,W[i][j][k]);
         }
       }
     }

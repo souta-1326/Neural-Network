@@ -1,6 +1,6 @@
 #include<bits/stdc++.h>
 using namespace std;
-using F = double;
+using F = float;
 inline void sigmoid(int N,F A[],F ret[]){
   for(int i=0;i<N;i++) ret[i] = 1/(1+exp(-A[i]));
 }
@@ -28,16 +28,42 @@ inline void softmax(int N,F A[],F ret[]){
 inline F softmax_dash(F x,F y,F t){
   return y-t;
 }
+inline void relu(int N,F A[],F ret[]){
+  for(int i=0;i<N;i++) ret[i] = max(A[i],F(0));
+}
+inline F relu_dash(F x){
+  return x>=0;
+}
 using Matrix = vector<vector<F>>;
 template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_Act_dash)(F,F,F),int... _node_count> class NN{
   static constexpr int layer_count = sizeof...(_node_count);
   static constexpr int node_count[layer_count] = {_node_count...};
-  static constexpr int max_node_count = *max_element(node_count,node_count+layer_count);
-  F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
-  F W[layer_count-1][max_node_count+1][max_node_count],dW[layer_count-1][max_node_count+1][max_node_count];
+  static constexpr int max_node_count = *max_element(node_count,node_count+layer_count-1);
+  //F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
+  F **A,**Act_A;
+  //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dW[layer_count-1][max_node_count_left+1][max_node_count_right];
+  F ***W,***dW;
   F lr;
 public:
   NN(F _lr = 0.01):lr(_lr){
+    A = new F*[layer_count];
+    for(int i=0;i<layer_count;i++) A[i] = new F[node_count[i]+1];
+    Act_A = new F*[layer_count];
+    for(int i=0;i<layer_count;i++) Act_A[i] = new F[node_count[i]+1];
+    W = new F**[layer_count-1];
+    for(int i=0;i<layer_count-1;i++){
+      W[i] = new F*[node_count[i]+1];
+      for(int j=0;j<node_count[i]+1;j++){
+        W[i][j] = new F[node_count[i+1]];
+      }
+    }
+    dW = new F**[layer_count-1];
+    for(int i=0;i<layer_count-1;i++){
+      dW[i] = new F*[node_count[i]+1];
+      for(int j=0;j<node_count[i]+1;j++){
+        dW[i][j] = new F[node_count[i+1]];
+      }
+    }
     for(int i=0;i<layer_count-1;i++) A[i][node_count[i]] = Act_A[i][node_count[i]] = 1;
     random_device seed_gen;
     default_random_engine engine(seed_gen());
@@ -116,5 +142,25 @@ public:
       (i==layer_count-2 ? Output_Act:Hidden_Act)(node_count[i+1],A[i+1],Act_A[i+1]);
     }
     memcpy(ret,Act_A[layer_count-1],node_count[layer_count-1]*sizeof(F));
+  }
+  ~NN(){
+    for(int i=0;i<layer_count;i++) delete[] A[i];
+    delete[] A;
+    for(int i=0;i<layer_count;i++) delete[] Act_A[i];
+    delete[] Act_A;
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        delete[] W[i][j];
+      }
+      delete[] W[i];
+    }
+    delete[] W;
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        delete[] dW[i][j];
+      }
+      delete[] dW[i];
+    }
+    delete[] dW;
   }
 };

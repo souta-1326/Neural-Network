@@ -1,5 +1,7 @@
 #include"NN.hpp"
 using namespace std;
+constexpr F lr1(){return 0.1;}
+constexpr F lr2(){return 0.2;}
 void func1(){
   NN<sigmoid,sigmoid_dash,id,id_dash,3,4,2> network(0.1);
   vector<Matrix> w
@@ -10,26 +12,31 @@ void func1(){
   F t[2] = {1,1};
   network.training(x,t);
   network.output(x,t);
-  for(F a:t) cout << a << endl;
+  for(F a:t) printf("%lf\n",a);
+}
+inline F test_func(F x){return sin(x);}
+inline F rand(F lef,F rig){
+  static random_device rng;
+  return F(rng())/UINT_MAX*(rig-lef)+lef;
 }
 void func2(){
   int time = clock();
-  NN<tanh,tanh_dash,id,id_dash,1,10,1> NN_sin(0.01);
+  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.01);
   F x[1],t[1];
   random_device rng;
   for(int i=0;i<1000000;i++){
-    x[0] = double(rng())/UINT_MAX*8-4;
-    t[0] = sin(x[0]);
+    x[0] = rand(0,2*acos(-1));
+    t[0] = test_func(x[0]);
     NN_sin.training(x,t);
     //printf("%lf %lf\n",x[0],t[0]);
   }
   //NN_sin.out_W();
   for(int i=0;i<10;i++){
-    x[0] = double(rng())/UINT_MAX*8-4;
+    x[0] = rand(0,2*acos(-1));
     NN_sin.output(x,t);
-    printf("sin(%lf):%lf error:%lf loss:%lf\n",x[0],t[0],abs(sin(x[0])-t[0]),pow(abs(sin(x[0])-t[0]),2)/2);
+    printf("test_func(%lf):%lf error:%lf loss:%lf\n",x[0],t[0],abs(test_func(x[0])-t[0]),pow(abs(test_func(x[0])-t[0]),2)/2);
   }
-  cout << clock()-time << endl;
+  printf("time:%lu\n",clock()-time);
 }
 int main(){
   func2();

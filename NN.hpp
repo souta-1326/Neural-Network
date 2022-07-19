@@ -1,46 +1,146 @@
-#include"NN.hpp"
+#include<bits/stdc++.h>
 using namespace std;
-constexpr F lr1(){return 0.1;}
-constexpr F lr2(){return 0.2;}
-void func1(){
-  NN<sigmoid,sigmoid_dash,id,id_dash,3,4,2> network(0.1);
-  vector<Matrix> w
-  ({{{0.73,0.42,0.34,0.53},{0.96,0.37,-0.43,0.06},{0.98,-0.79,-0.58,-0.96},{0.93,0.32,0.47,-1.00}},
-    {{-0.98,0.08},{-0.52,-0.09},{-0.59,0.92},{-0.59,-0.07},{-0.67,0.70}}});
-  network.W_set(w);
-  F x[3] = {-0.65,-0.05,-0.78};
-  F t[2] = {1,1};
-  network.training(x,t);
-  network.output(x,t);
-  for(F a:t) printf("%lf\n",a);
+using F = float;
+inline void sigmoid(int N,F A[],F ret[]){
+  for(int i=0;i<N;i++) ret[i] = 1/(1+exp(-A[i]));
 }
-inline F test_func(F x){return sin(x);}
-inline F rand(F lef,F rig){
-  static random_device rng;
-  return F(rng())/UINT_MAX*(rig-lef)+lef;
+inline F sigmoid_dash(F x){
+  F s = 1/(1+exp(-x));
+  return s*(1-s);
 }
-
-void func2(){
-  static F x[1000000][1],t[1000000][1],tx[1],tt[1];
-  random_device rng;
-  for(int i=0;i<1000000;i++){
-    x[i][0] = rand(0,2*acos(-1));
-    t[i][0] = test_func(x[i][0]);
+inline F sigmoid_dash(F x,F y,F t){
+  F s = 1/(1+exp(-x));
+  return s*(1-s)*(y-t);
+}
+inline void id(int N,F A[],F ret[]){memcpy(ret,A,N*sizeof(F));}
+inline F id_dash(F x,F y,F t){return (y-t);}
+inline void tanh(int N,F A[],F ret[]){
+  for(int i=0;i<N;i++) ret[i] = tanh(A[i]);
+}
+inline F tanh_dash(F x){
+  return pow(cosh(x),-2);
+}
+inline void softmax(int N,F A[],F ret[]){
+  F sum = 0;
+  for(int i=0;i<N;i++) sum += (ret[i] = exp(A[i]));
+  for(int i=0;i<N;i++) ret[i] /= sum;
+}
+inline F softmax_dash(F x,F y,F t){
+  return y-t;
+}
+inline void relu(int N,F A[],F ret[]){
+  for(int i=0;i<N;i++) ret[i] = max(A[i],F(0));
+}
+inline F relu_dash(F x){
+  return x>=0;
+}
+using Matrix = vector<vector<F>>;
+template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_Act_dash)(F,F,F),int... _node_count> class NN{
+  static constexpr int layer_count = sizeof...(_node_count);
+  static constexpr int node_count[layer_count] = {_node_count...};
+  static constexpr int max_node_count = *max_element(node_count,node_count+layer_count);
+  //F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
+  F **A,**Act_A;
+  //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dW[layer_count-1][max_node_count_left+1][max_node_count_right];
+  F ***W,***dW;
+  F lr;
+public:
+  NN(F _lr = 0.01):lr(_lr){
+    A = new F*[layer_count];
+    for(int i=0;i<layer_count;i++) A[i] = new F[node_count[i]+1];
+    Act_A = new F*[layer_count];
+    for(int i=0;i<layer_count;i++) Act_A[i] = new F[node_count[i]+1];
+    W = new F**[layer_count-1];
+    for(int i=0;i<layer_count-1;i++){
+      W[i] = new F*[node_count[i]+1];
+      for(int j=0;j<node_count[i]+1;j++){
+        W[i][j] = new F[node_count[i+1]];
+      }
+    }
+    dW = new F**[layer_count-1];
+    for(int i=0;i<layer_count-1;i++){
+      dW[i] = new F*[node_count[i]+1];
+      for(int j=0;j<node_count[i]+1;j++){
+        dW[i][j] = new F[node_count[i+1]];
+      }
+    }
+    for(int i=0;i<layer_count-1;i++) A[i][node_count[i]] = Act_A[i][node_count[i]] = 1;
+    random_device seed_gen;
+    default_random_engine engine(seed_gen());
+    for(int i=0;i<layer_count-1;i++){
+      normal_distribution dist(0.0,1/sqrt(node_count[i]));
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++){
+          W[i][j][k] = dist(engine);
+        }
+      }
+    }
   }
-  int time = clock();
-  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.01);
-  for(int i=0;i<1000000;i++){
-    NN_sin.training(x[i],t[i]);
-    //printf("%lf %lf\n",x[0],t[0]);
+  void W_set(vector<Matrix> &w){
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++) W[i][j][k] = w[i][j][k];
+      }
+    }
   }
-  //NN_sin.out_W();
-  for(int i=0;i<10;i++){
-    tx[0] = rand(0,2*acos(-1));
-    NN_sin.output(tx,tt); 
-    printf("test_func(%lf):%lf error:%lf loss:%lf\n",tx[0],tt[0],abs(test_func(tx[0])-tt[0]),pow(abs(test_func(tx[0])-tt[0]),2)/2);
+  void training(F x[node_count[0]],F t[node_count[layer_count-1]]){
+    //順伝播
+    memcpy(Act_A[0],x,node_count[0]*sizeof(F));
+    for(int i=0;i<layer_count-1;i++){
+      fill(A[i+1],A[i+1]+node_count[i+1],0);
+      for(int k=0;k<node_count[i]+1;k++){
+        for(int j=0;j<node_count[i+1];j++) A[i+1][j] += Act_A[i][k]*W[i][k][j];
+      }
+      (i==layer_count-2 ? Output_Act:Hidden_Act)(node_count[i+1],A[i+1],Act_A[i+1]);
+    }
+    //逆伝播
+    static F delta[max_node_count],delta_new[max_node_count];//転置されている
+    for(int i=layer_count-1;i>=1;i--){
+      if(i == layer_count-1){
+        for(int j=0;j<node_count[i];j++){
+          delta[j] = Output_Act_dash(A[i][j],Act_A[i][j],t[j]);
+        }
+      }
+      else{
+        fill(delta_new,delta_new+node_count[i],0);
+        for(int j=0;j<node_count[i];j++){
+          for(int k=0;k<node_count[i+1];k++) delta_new[j] += W[i][j][k]*delta[k];
+          delta_new[j] *= Hidden_Act_dash(A[i][j]);
+        }
+        memcpy(delta,delta_new,node_count[i]*sizeof(F));
+      }
+      for(int j=0;j<node_count[i-1]+1;j++){
+        for(int k=0;k<node_count[i];k++) dW[i-1][j][k] = Act_A[i-1][j]*delta[k];
+      }
+    }
+    //反映
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++){
+          W[i][j][k] -= dW[i][j][k]*lr;
+        }
+      }
+    }
   }
-  printf("time:%lu\n",clock()-time);
-}
-int main(){
-  func2();
-}
+  void W_out(){
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++){
+          fprintf(stderr,"%d %d %d: %lf\n",i,j,k,W[i][j][k]);
+        }
+      }
+    }
+  }
+  void output(F x[node_count[0]],F ret[node_count[layer_count-1]]){
+    memcpy(Act_A[0],x,node_count[0]*sizeof(F));
+    for(int i=0;i<layer_count-1;i++){
+      fill(A[i+1],A[i+1]+node_count[i+1],0);
+      for(int k=0;k<node_count[i]+1;k++){
+        for(int j=0;j<node_count[i+1];j++) A[i+1][j] += Act_A[i][k]*W[i][k][j];
+      }
+      (i==layer_count-2 ? Output_Act:Hidden_Act)(node_count[i+1],A[i+1],Act_A[i+1]);
+    }
+    memcpy(ret,Act_A[layer_count-1],node_count[layer_count-1]*sizeof(F));
+  }
+  ~NN() = default;
+};

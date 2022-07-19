@@ -85,7 +85,6 @@ public:
   }
   void training(F x[node_count[0]],F t[node_count[layer_count-1]]){
     //順伝播
-    memcpy(A[0],x,node_count[0]*sizeof(F));
     memcpy(Act_A[0],x,node_count[0]*sizeof(F));
     for(int i=0;i<layer_count-1;i++){
       fill(A[i+1],A[i+1]+node_count[i+1],0);

@@ -19,22 +19,25 @@ inline F rand(F lef,F rig){
   static random_device rng;
   return F(rng())/UINT_MAX*(rig-lef)+lef;
 }
+
 void func2(){
-  int time = clock();
-  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.01);
-  F x[1],t[1];
+  static F x[1000000][1],t[1000000][1],tx[1],tt[1];
   random_device rng;
   for(int i=0;i<1000000;i++){
-    x[0] = rand(0,2*acos(-1));
-    t[0] = test_func(x[0]);
-    NN_sin.training(x,t);
+    x[i][0] = rand(0,2*acos(-1));
+    t[i][0] = test_func(x[i][0]);
+  }
+  int time = clock();
+  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.01);
+  for(int i=0;i<1000000;i++){
+    NN_sin.training(x[i],t[i]);
     //printf("%lf %lf\n",x[0],t[0]);
   }
   //NN_sin.out_W();
   for(int i=0;i<10;i++){
-    x[0] = rand(0,2*acos(-1));
-    NN_sin.output(x,t);
-    printf("test_func(%lf):%lf error:%lf loss:%lf\n",x[0],t[0],abs(test_func(x[0])-t[0]),pow(abs(test_func(x[0])-t[0]),2)/2);
+    tx[0] = rand(0,2*acos(-1));
+    NN_sin.output(tx,tt); 
+    printf("test_func(%lf):%lf error:%lf loss:%lf\n",tx[0],tt[0],abs(test_func(tx[0])-tt[0]),pow(abs(test_func(tx[0])-tt[0]),2)/2);
   }
   printf("time:%lu\n",clock()-time);
 }

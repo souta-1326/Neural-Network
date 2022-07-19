@@ -38,7 +38,7 @@ using Matrix = vector<vector<F>>;
 template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_Act_dash)(F,F,F),int... _node_count> class NN{
   static constexpr int layer_count = sizeof...(_node_count);
   static constexpr int node_count[layer_count] = {_node_count...};
-  static constexpr int max_node_count = *max_element(node_count,node_count+layer_count-1);
+  static constexpr int max_node_count = *max_element(node_count,node_count+layer_count);
   //F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
   F **A,**Act_A;
   //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dW[layer_count-1][max_node_count_left+1][max_node_count_right];

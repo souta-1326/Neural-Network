@@ -4,7 +4,7 @@ constexpr F lr1(){return 0.1;}
 constexpr F lr2(){return 0.2;}
 void func1(){
   NN<sigmoid,sigmoid_dash,id,id_dash,3,4,2> network(0.1);
-  vector<Matrix> w
+  vector<vector<vector<F>>> w
   ({{{0.73,0.42,0.34,0.53},{0.96,0.37,-0.43,0.06},{0.98,-0.79,-0.58,-0.96},{0.93,0.32,0.47,-1.00}},
     {{-0.98,0.08},{-0.52,-0.09},{-0.59,0.92},{-0.59,-0.07},{-0.67,0.70}}});
   network.W_set(w);

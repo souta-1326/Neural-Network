@@ -34,8 +34,7 @@ inline void relu(int N,F A[],F ret[]){
 inline F relu_dash(F x){
   return x>=0;
 }
-using Matrix = vector<vector<F>>;
-template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_Act_dash)(F,F,F),int... _node_count> class NN{
+template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_loss_Act_dash)(F,F,F),int... _node_count> class NN{
   static constexpr int layer_count = sizeof...(_node_count);
   static constexpr int node_count[layer_count] = {_node_count...};
   static constexpr int max_node_count = *max_element(node_count,node_count+layer_count);
@@ -76,7 +75,7 @@ public:
       }
     }
   }
-  void W_set(vector<Matrix> &w){
+  template<class T> void W_set(T &w){
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++) W[i][j][k] = w[i][j][k];
@@ -98,7 +97,7 @@ public:
     for(int i=layer_count-1;i>=1;i--){
       if(i == layer_count-1){
         for(int j=0;j<node_count[i];j++){
-          delta[j] = Output_Act_dash(A[i][j],Act_A[i][j],t[j]);
+          delta[j] = Output_loss_Act_dash(A[i][j],Act_A[i][j],t[j]);
         }
       }
       else{

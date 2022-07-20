@@ -30,16 +30,16 @@ int main(){
   skip();
   for(int i=0;i<LN;i++) input1(lx[i],lt[i]);
   for(int i=0;i<TN;i++) input2(tx[i],tt[i]);
-  int ans = 0;
-  int start = clock();
+  int start_time = clock();
   for(int i=0;i<LN;i++){
     network.training(lx[i],lt[i]);
     if((i&255)==0) printf("%d\n",i);
   }
-  printf("Learning Time: %.6lf\n",F(clock()-start)/CLOCKS_PER_SEC);
+  printf("Learning Time: %.6lf\n",F(clock()-start_time)/CLOCKS_PER_SEC);
+  int AC_count = 0;
   for(int i=0;i<TN;i++){
     network.output(tx[i],ret);
-    ans += (max_element(tt[i],tt[i]+10)-tt[i]==max_element(ret,ret+10)-ret);
+    AC_count += (max_element(tt[i],tt[i]+10)-tt[i]==max_element(ret,ret+10)-ret);
   }
-  printf("Accuracy: %.4lf\n",double(ans)/TN);
+  printf("Accuracy: %.4lf\n",double(AC_count)/TN);
 }

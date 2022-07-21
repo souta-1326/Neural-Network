@@ -44,8 +44,10 @@ template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act
   F ***W,***dv,***ds;
   F lr;
   static constexpr F Momentum_beta = 0.9;
+  static constexpr F Momentum_beta_rev = 1/(1-Momentum_beta);
   static constexpr F RMSProp_beta = 0.999;
   static constexpr F RMSProp_eps = 1e-8;
+  static constexpr F RMSProp_beta_rev = 1/(1-RMSProp_beta);
 public:
   NN(F _lr = 0.001):lr(_lr){
     A = new F*[layer_count];
@@ -130,7 +132,7 @@ public:
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
-          W[i][j][k] -= lr*dv[i][j][k]/(1-Momentum_beta)/sqrtf(ds[i][j][k]/(1-RMSProp_beta)+RMSProp_eps);
+          W[i][j][k] -= lr*dv[i][j][k]*Momentum_beta_rev/sqrtf(ds[i][j][k]*RMSProp_beta_rev+RMSProp_eps);
         }
       }
     }

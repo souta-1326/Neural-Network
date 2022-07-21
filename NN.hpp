@@ -42,14 +42,26 @@ template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act
   F **A,**Act_A;
   //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dv[layer_count-1][max_node_count_left+1][max_node_count_right];
   F ***W,***dv,***ds;
-  F lr;
-  static constexpr F Momentum_beta = 0.9;
-  static constexpr F Momentum_beta_rev = 1/(1-Momentum_beta);
-  static constexpr F RMSProp_beta = 0.999;
-  static constexpr F RMSProp_eps = 1e-8;
-  static constexpr F RMSProp_beta_rev = 1/(1-RMSProp_beta);
+  F alpha;
+  F momentum_beta;
+  F sub_1_momentum_beta;
+  F rev_sub_1_momentum_beta;
+  F RMSProp_beta;
+  F sub_1_RMSProp_beta;
+  static constexpr F RMSProp_eps = 1e-6;
+  F rev_sub_1_RMSProp_beta;
+  F mul_alpha_rev_sub_1_momentum_beta;
 public:
-  NN(F _lr = 0.001):lr(_lr){
+  NN(F _alpha = 0.001,F _momentum_beta = 0.9,F _RMSProp_beta = 0.999):
+  alpha(_alpha),
+  momentum_beta(_momentum_beta),
+  sub_1_momentum_beta(1-momentum_beta),
+  rev_sub_1_momentum_beta(1/sub_1_momentum_beta),
+  RMSProp_beta(_RMSProp_beta),
+  sub_1_RMSProp_beta(1-RMSProp_beta),
+  rev_sub_1_RMSProp_beta(1/sub_1_RMSProp_beta),
+  mul_alpha_rev_sub_1_momentum_beta(alpha*rev_sub_1_momentum_beta)
+  {
     A = new F*[layer_count];
     for(int i=0;i<layer_count;i++) A[i] = new F[node_count[i]+1];
     Act_A = new F*[layer_count];
@@ -123,8 +135,8 @@ public:
       for(int j=0;j<node_count[i-1]+1;j++){
         for(int k=0;k<node_count[i];k++){
           F w_now = Act_A[i-1][j]*delta[k];
-          dv[i-1][j][k] = dv[i-1][j][k]*Momentum_beta+w_now*(1-Momentum_beta);
-          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+w_now*w_now*(1-RMSProp_beta);
+          dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+w_now*sub_1_momentum_beta;
+          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+w_now*w_now*sub_1_RMSProp_beta;
         }
       }
     }
@@ -132,7 +144,7 @@ public:
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
-          W[i][j][k] -= lr*dv[i][j][k]*Momentum_beta_rev/sqrtf(ds[i][j][k]*RMSProp_beta_rev+RMSProp_eps);
+          W[i][j][k] -= dv[i][j][k]*mul_alpha_rev_sub_1_momentum_beta/sqrtf(ds[i][j][k]*rev_sub_1_RMSProp_beta+RMSProp_eps);
         }
       }
     }

@@ -14,12 +14,12 @@ void skip(){
   for(int i=0;i<8;i++) getc_unlocked(fp4);
 }
 void input1(F x[],F t[]){
-  for(int i=0;i<R*C;i++) x[i] = double(getc_unlocked(fp1))/256;
+  for(int i=0;i<R*C;i++) x[i] = F(getc_unlocked(fp1))/256;
   int num = getc_unlocked(fp2);
   fill(t,t+10,0);t[num] = 1;
 }
 void input2(F x[],F t[]){
-  for(int i=0;i<R*C;i++) x[i] = double(getc_unlocked(fp3))/256;
+  for(int i=0;i<R*C;i++) x[i] = F(getc_unlocked(fp3))/256;
   int num = getc_unlocked(fp4);
   fill(t,t+10,0);t[num] = 1;
 }

@@ -28,7 +28,7 @@ void func2(){
     t[i][0] = test_func(x[i][0]);
   }
   int time = clock();
-  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.01);
+  NN<sigmoid,sigmoid_dash,id,id_dash,1,10,1> NN_sin(0.001);
   for(int i=0;i<1000000;i++){
     NN_sin.training(x[i],t[i]);
     //printf("%lf %lf\n",x[0],t[0]);

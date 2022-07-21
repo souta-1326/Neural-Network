@@ -40,11 +40,14 @@ template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act
   static constexpr int max_node_count = *max_element(node_count,node_count+layer_count);
   //F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
   F **A,**Act_A;
-  //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dW[layer_count-1][max_node_count_left+1][max_node_count_right];
-  F ***W,***dW;
+  //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dv[layer_count-1][max_node_count_left+1][max_node_count_right];
+  F ***W,***dv,***ds;
   F lr;
+  static constexpr F Momentum_beta = 0.9;
+  static constexpr F RMSProp_beta = 0.999;
+  static constexpr F RMSProp_eps = 1e-8;
 public:
-  NN(F _lr = 0.01):lr(_lr){
+  NN(F _lr = 0.001):lr(_lr){
     A = new F*[layer_count];
     for(int i=0;i<layer_count;i++) A[i] = new F[node_count[i]+1];
     Act_A = new F*[layer_count];
@@ -56,18 +59,25 @@ public:
         W[i][j] = new F[node_count[i+1]];
       }
     }
-    dW = new F**[layer_count-1];
+    dv = new F**[layer_count-1];
     for(int i=0;i<layer_count-1;i++){
-      dW[i] = new F*[node_count[i]+1];
+      dv[i] = new F*[node_count[i]+1];
       for(int j=0;j<node_count[i]+1;j++){
-        dW[i][j] = new F[node_count[i+1]];
+        dv[i][j] = new F[node_count[i+1]];
+      }
+    }
+    ds = new F**[layer_count-1];
+    for(int i=0;i<layer_count-1;i++){
+      ds[i] = new F*[node_count[i]+1];
+      for(int j=0;j<node_count[i]+1;j++){
+        ds[i][j] = new F[node_count[i+1]];
       }
     }
     for(int i=0;i<layer_count-1;i++) A[i][node_count[i]] = Act_A[i][node_count[i]] = 1;
     random_device seed_gen;
     default_random_engine engine(seed_gen());
     for(int i=0;i<layer_count-1;i++){
-      normal_distribution dist(0.0,1/sqrt(node_count[i]));
+      normal_distribution dist(0.0,2/sqrt(node_count[i]));
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
           W[i][j][k] = dist(engine);
@@ -109,14 +119,18 @@ public:
         memcpy(delta,delta_new,node_count[i]*sizeof(F));
       }
       for(int j=0;j<node_count[i-1]+1;j++){
-        for(int k=0;k<node_count[i];k++) dW[i-1][j][k] = Act_A[i-1][j]*delta[k];
+        for(int k=0;k<node_count[i];k++){
+          F w_now = Act_A[i-1][j]*delta[k];
+          dv[i-1][j][k] = dv[i-1][j][k]*Momentum_beta+w_now*(1-Momentum_beta);
+          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+w_now*w_now*(1-RMSProp_beta);
+        }
       }
     }
     //反映
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
-          W[i][j][k] -= dW[i][j][k]*lr;
+          W[i][j][k] -= lr*dv[i][j][k]/(1-Momentum_beta)/sqrtf(ds[i][j][k]/(1-RMSProp_beta)+RMSProp_eps);
         }
       }
     }

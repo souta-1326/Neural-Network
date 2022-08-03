@@ -131,11 +131,11 @@ public:
       }
       for(int j=0;j<node_count[i-1]+1;j++){
         for(int k=0;k<node_count[i];k++){
-          F w_now = Act_A[i-1][j]*delta[k];
-          //dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+w_now*(1-momentum_beta);
-          dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+w_now*sub_1_momentum_beta;
-          //ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+(w_now**2)*(1-RMSProp_beta);
-          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+w_now*w_now*sub_1_RMSProp_beta;
+          F now_grad = Act_A[i-1][j]*delta[k];
+          //dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+now_grad*(1-momentum_beta);
+          dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+now_grad*sub_1_momentum_beta;
+          //ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+(now_grad**2)*(1-RMSProp_beta);
+          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+now_grad*now_grad*sub_1_RMSProp_beta;
         }
       }
     }

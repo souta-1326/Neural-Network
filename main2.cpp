@@ -26,7 +26,7 @@ void input2(F x[],F t[]){
 F lx[LN][R*C],lt[LN][10];
 F tx[TN][R*C],tt[TN][10],ret[10];
 int main(){
-  NN<relu,relu_dash,softmax,softmax_dash,R*C,800,10> network(0.001);
+  NN<relu,softmax,R*C,800,10> network(0.001);
   skip();
   for(int i=0;i<LN;i++) input1(lx[i],lt[i]);
   for(int i=0;i<TN;i++) input2(tx[i],tt[i]);
@@ -35,7 +35,7 @@ int main(){
     network.training(lx[i],lt[i]);
     if((i&255)==0) printf("%d\n",i);
   }
-  printf("Learning Time: %.6lf\n",F(clock()-start_time)/CLOCKS_PER_SEC);
+  printf("Training Time: %.6lf\n",F(clock()-start_time)/CLOCKS_PER_SEC);
   int AC_count = 0;
   for(int i=0;i<TN;i++){
     network.output(tx[i],ret);

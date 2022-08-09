@@ -33,10 +33,22 @@ inline void relu(int N,F A[],F ret[]){
 inline F relu_dash(F x){
   return x>=0;
 }
-template <void(*Hidden_Act)(int,F[],F[]),F(*Hidden_Act_dash)(F),void(*Output_Act)(int,F[],F[]),F(*Output_loss_Act_dash)(F,F,F),int... _node_count> class NN{
+template <void(*Hidden_Act)(int,F[],F[]),void(*Output_Act)(int,F[],F[]),int... _node_count> class NN{
   static constexpr int layer_count = sizeof...(_node_count);
   static constexpr int node_count[layer_count] = {_node_count...};
   static constexpr int max_node_count = *std::max_element(node_count,node_count+layer_count);
+  static constexpr F(*Hidden_Act_dash)(F) = 
+  (
+    Hidden_Act == sigmoid ? (F(*)(F))sigmoid_dash:
+    Hidden_Act == (void(*)(int,F[],F[]))tanh ? (F(*)(F))tanh_dash:
+    Hidden_Act == relu ? (F(*)(F))relu_dash:
+  nullptr);
+  static constexpr F(*Output_loss_Act_dash)(F,F,F) =
+  (
+    Output_Act == id ? (F(*)(F,F,F))id_dash:
+    Output_Act == sigmoid ? (F(*)(F,F,F))sigmoid_dash:
+    Output_Act == softmax ? (F(*)(F,F,F))softmax_dash:
+  nullptr);
   //F A[layer_count][max_node_count+1],Act_A[layer_count][max_node_count+1];
   F **A,**Act_A;
   //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dv[layer_count-1][max_node_count_left+1][max_node_count_right];
@@ -88,7 +100,7 @@ public:
     std::random_device seed_gen;
     std::default_random_engine engine(seed_gen());
     for(int i=0;i<layer_count-1;i++){
-      std::normal_distribution dist(0.0,1/sqrt(node_count[i]));
+      std::normal_distribution dist(0.0,sqrt((Hidden_Act == relu ? 2.0:1.0)/node_count[i]));
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
           W[i][j][k] = dist(engine);

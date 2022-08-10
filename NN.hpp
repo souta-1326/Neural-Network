@@ -53,6 +53,7 @@ template <void(*Hidden_Act)(int,F[],F[]),void(*Output_Act)(int,F[],F[]),int... _
   F **A,**Act_A;
   //F W[layer_count-1][max_node_count_left+1][max_node_count_right],dv[layer_count-1][max_node_count_left+1][max_node_count_right];
   F ***W,***dv,***ds;//重み,motentum,RMSProp
+  F **delta;
   F alpha;//学習率
   F momentum_beta;
   F sub_1_momentum_beta;
@@ -96,6 +97,8 @@ public:
         ds[i][j] = new F[node_count[i+1]];
       }
     }
+    delta = new F*[layer_count];
+    for(int i=1;i<layer_count;i++) delta[i] = new F[node_count[i]];
     for(int i=0;i<layer_count-1;i++) A[i][node_count[i]] = Act_A[i][node_count[i]] = 1;
     std::random_device seed_gen;
     std::default_random_engine engine(seed_gen());
@@ -126,28 +129,29 @@ public:
       (i==layer_count-2 ? Output_Act:Hidden_Act)(node_count[i+1],A[i+1],Act_A[i+1]);
     }
     //逆伝播
-    static F delta[max_node_count],delta_new[max_node_count];//転置されている
     for(int i=layer_count-1;i>=1;i--){
       if(i == layer_count-1){
         for(int j=0;j<node_count[i];j++){
-          delta[j] = Output_loss_Act_dash(A[i][j],Act_A[i][j],t[j]);
+          delta[i][j] = Output_loss_Act_dash(A[i][j],Act_A[i][j],t[j]);
         }
       }
       else{
-        std::fill(delta_new,delta_new+node_count[i],0);
+        std::fill(delta[i],delta[i]+node_count[i],0);
         for(int j=0;j<node_count[i];j++){
-          for(int k=0;k<node_count[i+1];k++) delta_new[j] += W[i][j][k]*delta[k];
-          delta_new[j] *= Hidden_Act_dash(A[i][j]);
+          for(int k=0;k<node_count[i+1];k++) delta[i][j] += W[i][j][k]*delta[i+1][k];
+          delta[i][j] *= Hidden_Act_dash(A[i][j]);
         }
-        memcpy(delta,delta_new,node_count[i]*sizeof(F));
+        //memcpy(delta,delta_new,node_count[i]*sizeof(F));
       }
-      for(int j=0;j<node_count[i-1]+1;j++){
-        for(int k=0;k<node_count[i];k++){
-          F now_grad = Act_A[i-1][j]*delta[k];
+    }
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++){
+          F now_grad = Act_A[i][j]*delta[i+1][k];
           //dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+now_grad*(1-momentum_beta);
-          dv[i-1][j][k] = dv[i-1][j][k]*momentum_beta+now_grad*sub_1_momentum_beta;
+          dv[i][j][k] = dv[i][j][k]*momentum_beta+now_grad*sub_1_momentum_beta;
           //ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+(now_grad**2)*(1-RMSProp_beta);
-          ds[i-1][j][k] = ds[i-1][j][k]*RMSProp_beta+now_grad*now_grad*sub_1_RMSProp_beta;
+          ds[i][j][k] = ds[i][j][k]*RMSProp_beta+now_grad*now_grad*sub_1_RMSProp_beta;
         }
       }
     }

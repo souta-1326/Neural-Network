@@ -33,7 +33,11 @@ constexpr inline void relu(int N,F A[],F ret[]){
 inline F relu_dash(F x){
   return x>=0;
 }
-template <void(*Hidden_Act)(int,F[],F[]),void(*Output_Act)(int,F[],F[]),int... _node_count> class NN{
+enum class Optimizer{
+  SGD,Adam
+};
+template <void(*Hidden_Act)(int,F[],F[]),void(*Output_Act)(int,F[],F[]),Optimizer Optimize,int... _node_count> class NN{
+private:
   static constexpr int layer_count = sizeof...(_node_count);
   static constexpr int node_count[layer_count] = {_node_count...};
   static constexpr int max_node_count = *std::max_element(node_count,node_count+layer_count);
@@ -118,7 +122,7 @@ public:
       }
     }
   }
-  void training(F x[node_count[0]],F t[node_count[layer_count-1]]){
+  void training(F x[],F t[]){
     //順伝播
     memcpy(Act_A[0],x,node_count[0]*sizeof(F));
     for(int i=0;i<layer_count-1;i++){
@@ -144,6 +148,18 @@ public:
         //memcpy(delta,delta_new,node_count[i]*sizeof(F));
       }
     }
+    (Optimize == Optimizer::SGD ? Optimize_SGD():Optimize_Adam());
+  }
+  constexpr inline void Optimize_SGD(){
+    for(int i=0;i<layer_count-1;i++){
+      for(int j=0;j<node_count[i]+1;j++){
+        for(int k=0;k<node_count[i+1];k++){
+          W[i][j][k] -= alpha*Act_A[i][j]*delta[i+1][k];
+        }
+      }
+    }
+  }
+  constexpr inline void Optimize_Adam(){
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){
         for(int k=0;k<node_count[i+1];k++){
@@ -178,7 +194,7 @@ public:
       }
     }
   }
-  void output(F x[node_count[0]],F ret[node_count[layer_count-1]]){
+  void output(F x[],F ret[]){
     memcpy(Act_A[0],x,node_count[0]*sizeof(F));
     for(int i=0;i<layer_count-1;i++){
       std::fill(A[i+1],A[i+1]+node_count[i+1],0);

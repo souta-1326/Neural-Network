@@ -26,7 +26,7 @@ void input2(F x[],F t[]){
 F lx[LN][R*C],lt[LN][10];
 F tx[TN][R*C],tt[TN][10],ret[10];
 int main(){
-  NN<relu,softmax,R*C,800,10> network(0.001);
+  NN<relu,softmax,Optimizer::Adam,R*C,800,10> network(0.001);
   skip();
   for(int i=0;i<LN;i++) input1(lx[i],lt[i]);
   for(int i=0;i<TN;i++) input2(tx[i],tt[i]);

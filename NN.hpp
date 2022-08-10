@@ -1,33 +1,33 @@
 #include<bits/stdc++.h>
 using F = float;
-inline void sigmoid(int N,F A[],F ret[]){
+constexpr inline void sigmoid(int N,F A[],F ret[]){
   for(int i=0;i<N;i++) ret[i] = 1/(1+std::exp(-A[i]));
 }
-inline F sigmoid_dash(F x){
+constexpr inline F sigmoid_dash(F x){
   F s = 1/(1+std::exp(-x));
   return s*(1-s);
 }
-inline F sigmoid_dash(F x,F y,F t){
+constexpr inline F sigmoid_dash(F x,F y,F t){
   F s = 1/(1+std::exp(-x));
   return s*(1-s)*(y-t);
 }
 inline void id(int N,F A[],F ret[]){memcpy(ret,A,N*sizeof(F));}
-inline F id_dash(F x,F y,F t){return (y-t);}
-inline void tanh(int N,F A[],F ret[]){
+constexpr inline F id_dash(F x,F y,F t){return (y-t);}
+constexpr inline void tanh(int N,F A[],F ret[]){
   for(int i=0;i<N;i++) ret[i] = std::tanh(A[i]);
 }
-inline F tanh_dash(F x){
+constexpr inline F tanh_dash(F x){
   F cosh_x = std::cosh(x);return 1/(cosh_x*cosh_x);
 }
-inline void softmax(int N,F A[],F ret[]){
+constexpr inline void softmax(int N,F A[],F ret[]){
   F sum = 0;
   for(int i=0;i<N;i++) sum += (ret[i] = std::exp(A[i]));
   for(int i=0;i<N;i++) ret[i] /= sum;
 }
-inline F softmax_dash(F x,F y,F t){
+constexpr inline F softmax_dash(F x,F y,F t){
   return y-t;
 }
-inline void relu(int N,F A[],F ret[]){
+constexpr inline void relu(int N,F A[],F ret[]){
   for(int i=0;i<N;i++) ret[i] = std::max(A[i],F(0));
 }
 inline F relu_dash(F x){

@@ -150,6 +150,31 @@ public:
     }
     (Optimize == Optimizer::SGD ? Optimize_SGD():Optimize_Adam());
   }
+  void training_minibatch(int n,F X[][node_count[0]],F T[][node_count[layer_count-1]]){
+    //順伝播
+    for(int i=1;i<layer_count;i++) std::fill(delta[i],delta[i]+node_count[i],0);
+    for(int data=0;data<n;data++){
+      F *x = X[data],*t = T[data];
+      memcpy(Act_A[0],x,node_count[0]*sizeof(F));
+      for(int i=0;i<layer_count-1;i++){
+        std::fill(A[i+1],A[i+1]+node_count[i+1],0);
+        for(int k=0;k<node_count[i]+1;k++){
+          for(int j=0;j<node_count[i+1];j++) A[i+1][j] += Act_A[i][k]*W[i][k][j];
+        }
+        (i==layer_count-2 ? Output_Act:Hidden_Act)(node_count[i+1],A[i+1],Act_A[i+1]);
+      }
+      for(int j=0;j<node_count[layer_count-1];j++) delta[layer_count-1][j] += Output_loss_Act_dash(A[layer_count-1][j],Act_A[layer_count-1][j],t[j]);
+    }
+    for(int j=0;j<node_count[layer_count-1];j++) delta[layer_count-1][j] /= n;
+    //逆伝播
+    for(int i=layer_count-2;i>=1;i--){
+      for(int j=0;j<node_count[i];j++){
+        for(int k=0;k<node_count[i+1];k++) delta[i][j] += W[i][j][k]*delta[i+1][k];
+        delta[i][j] *= Hidden_Act_dash(A[i][j]);
+      }
+    }
+    (Optimize == Optimizer::SGD ? Optimize_SGD():Optimize_Adam());
+  }
   constexpr inline void Optimize_SGD(){
     for(int i=0;i<layer_count-1;i++){
       for(int j=0;j<node_count[i]+1;j++){

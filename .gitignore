@@ -1,4 +1,5 @@
-main
-main2
-*ubyte
-NN
+*
+!main.cpp
+!main2.cpp
+!NN.hpp
+!README.md

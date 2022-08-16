@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include<omp.h>
 using F = float;
 constexpr inline void sigmoid(int N,F A[],F ret[]){
   for(int i=0;i<N;i++) ret[i] = 1/(1+std::exp(-A[i]));

@@ -1,7 +1,29 @@
 #include"NN.hpp"
 using namespace std;
-constexpr F lr1(){return 0.1;}
-constexpr F lr2(){return 0.2;}
+struct Timer {
+#ifdef _OPENMP
+  double st;
+
+  Timer() { reset(); }
+
+  inline void reset() { st = omp_get_wtime(); }
+
+  inline double elapsed() {
+    return omp_get_wtime()-st;
+  }
+#else
+  chrono::high_resolution_clock::time_point st;
+
+  Timer() { reset(); }
+
+  void reset() { st = chrono::high_resolution_clock::now(); }
+
+  double elapsed() {
+    auto ed = chrono::high_resolution_clock::now();
+    return double(chrono::duration_cast<chrono::nanoseconds>(ed - st).count())/1000000000;
+  }
+#endif
+};
 void func1(){
   NN<sigmoid,id,Optimizer::SGD,3,4,2> network(0.1);
   vector<vector<vector<F>>> w
@@ -14,7 +36,7 @@ void func1(){
   network.output(x,t);
   for(F a:t) printf("%lf\n",a);
 }
-inline F test_func(F x){return sin(x);}
+inline void test_func(F x[],F t[]){t[0] = sin(x[0]);}
 inline F rand(F lef,F rig){
   static random_device rng;
   return F(rng())/UINT_MAX*(rig-lef)+lef;
@@ -22,26 +44,35 @@ inline F rand(F lef,F rig){
 
 void func2(){
   constexpr int TRAIN_SIZE = 1000000;
-  static F x[TRAIN_SIZE][1],t[TRAIN_SIZE][1],tx[1],tt[1];
+  constexpr int BATCH_SIZE = 1;
+  constexpr int X_SIZE = 1;
+  constexpr int Y_SIZE = 1;
+  static_assert(TRAIN_SIZE%BATCH_SIZE == 0);
+  static F x[TRAIN_SIZE][X_SIZE],t[TRAIN_SIZE][Y_SIZE],tx[X_SIZE],tt[Y_SIZE],ty[Y_SIZE];
   std::random_device rng;
   for(int i=0;i<TRAIN_SIZE;i++){
-    x[i][0] = rand(0,2*acos(-1));
-    t[i][0] = test_func(x[i][0]);
+    for(int j=0;j<X_SIZE;j++) x[i][j] = rand(-acos(-1),acos(-1));
+    for(int j=0;j<Y_SIZE;j++) test_func(x[i],t[i]);
   }
-  int time = clock();
-  NN<sigmoid,id,Optimizer::Adam,1,10,1> NN_sin(0.001,0.9,0.9);
-  for(int i=0;i<TRAIN_SIZE;i++){
-    NN_sin.training(x[i],t[i]);
+  Timer timer;
+  NN<sigmoid,id,Optimizer::Adam,X_SIZE,10,Y_SIZE> NN_sin(0.001,0.9,0.999);
+  for(int i=0;i<TRAIN_SIZE;i+=BATCH_SIZE){
+    //NN_sin.training(x[i],t[i]);
+    NN_sin.training_minibatch(BATCH_SIZE,x+i,t+i);
     //printf("%lf %lf\n",x[0],t[0]);
   }
   //NN_sin.out_W();
   for(int i=0;i<10;i++){
-    tx[0] = rand(0,2*acos(-1));
-    NN_sin.output(tx,tt); 
-    printf("test_func(%lf):%lf error:%lf loss:%.10lf\n",tx[0],tt[0],abs(test_func(tx[0])-tt[0]),pow(abs(test_func(tx[0])-tt[0]),2)/2);
+    for(int j=0;j<X_SIZE;j++) tx[j] = rand(-acos(-1),acos(-1));
+    test_func(tx,ty);
+    NN_sin.output(tx,tt);
+    F error = 0;
+    for(int j=0;j<Y_SIZE;j++) error += abs(tt[j]-ty[j]);
+    error /= Y_SIZE;
+    printf("error:%lf loss:%.10lf\n",error,error*error/2);
   }
-  printf("time:%lu\n",clock()-time);
+  printf("time:%fsec\n",timer.elapsed());
 }
 int main(){
-  func1();
+  func2();
 }

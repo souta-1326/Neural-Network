@@ -1,5 +1,29 @@
 #include"NN.hpp"
 using namespace std;
+struct Timer {
+#ifdef _OPENMP
+  double st;
+
+  Timer() { reset(); }
+
+  inline void reset() { st = omp_get_wtime(); }
+
+  inline double elapsed() {
+    return omp_get_wtime()-st;
+  }
+#else
+  chrono::high_resolution_clock::time_point st;
+
+  Timer() { reset(); }
+
+  void reset() { st = chrono::high_resolution_clock::now(); }
+
+  double elapsed() {
+    auto ed = chrono::high_resolution_clock::now();
+    return double(chrono::duration_cast<chrono::nanoseconds>(ed - st).count())/1000000000;
+  }
+#endif
+};
 constexpr int LN = 60000,TN = 10000;
 constexpr int R = 28;
 constexpr int C = 28;
@@ -26,16 +50,16 @@ void input2(F x[],F t[]){
 F lx[LN][R*C],lt[LN][10];
 F tx[TN][R*C],tt[TN][10],ret[10];
 int main(){
-  NN<relu,softmax,Optimizer::Adam,R*C,800,10> network(0.001);
+  NN<relu,softmax,Optimizer::SGD,R*C,800,10> network(0.01);
   skip();
   for(int i=0;i<LN;i++) input1(lx[i],lt[i]);
   for(int i=0;i<TN;i++) input2(tx[i],tt[i]);
-  int start_time = clock();
+  Timer timer;
   for(int i=0;i<LN;i++){
     network.training(lx[i],lt[i]);
-    if((i&255)==0) printf("%d\n",i);
+    if((i&255)==0) printf("Done:%d\n",i);
   }
-  printf("Training Time: %.6lf\n",F(clock()-start_time)/CLOCKS_PER_SEC);
+  printf("Training Time: %.6lfsec\n",timer.elapsed());
   int AC_count = 0;
   for(int i=0;i<TN;i++){
     network.output(tx[i],ret);
